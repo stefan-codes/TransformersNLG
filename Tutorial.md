@@ -34,17 +34,10 @@ deactivate
 ```
 
 ## Create requirements.txt
-I installed pipreqs as suggested on stackoverlow.
-https://github.com/bndr/pipreqs
-
-#### Install
-```shell
-pip install pipreqs
-```
-
-#### Create
-```shell
-pipreqs /home/project/location
-```
+Create a requirements.txt and populate with different pip installs that you do in the project.
 
 ## Install modules
+...
+
+## Errors
+I had an issue with a cuda 100 file which is from 10.0 and I had 10.1. I just downloaded the 10.0 file and put it in the bin folder with the rest. Good blog post on the error was here ....
