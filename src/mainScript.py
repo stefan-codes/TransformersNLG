@@ -2,21 +2,28 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import tensorflow as tf
 import tensorflow_datasets as tfds
-
+import sys
 import time
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Setup input pipeline
-# Using datasets, I will work on preparing my data in the near future
+##################
+# Input pipeline #
+##################
 examples, metadata = tfds.load('ted_hrlr_translate/pt_to_en', with_info=True, as_supervised=True)
 train_examples, val_examples = examples['train'], examples['validation']
+print('Pipeline is done.')
 
-# Create a custom subwords tokenizer from the training dataset.
-# How would that work? do I need both?
+for element in train_examples:
+  print(element)
+  break
+
+#############
+# Tokenizer #
+#############
 tokenizer_en = tfds.features.text.SubwordTextEncoder.build_from_corpus((en.numpy() for pt, en in train_examples), target_vocab_size=2**13)
 tokenizer_pt = tfds.features.text.SubwordTextEncoder.build_from_corpus((pt.numpy() for pt, en in train_examples), target_vocab_size=2**13)
-
+print('Tokenizer is done.')
 # Test the tokenizer
 sample_string = 'Transformer is awesome.'
 tokenized_string = tokenizer_en.encode(sample_string)
