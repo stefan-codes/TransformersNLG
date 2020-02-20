@@ -2,73 +2,74 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import tensorflow as tf
 import tensorflow_datasets as tfds
-import sys
-import time
 import numpy as np
 import matplotlib.pyplot as plt
+import os
+import sys
+from functions import *
+from config import *
 
 ##################
 # Input pipeline #
 ##################
-examples, metadata = tfds.load('ted_hrlr_translate/pt_to_en', with_info=True, as_supervised=True)
-train_examples, val_examples = examples['train'], examples['validation']
-print('Pipeline is done.')
 
-for element in train_examples:
-  print(element)
-  break
+# Get the path to the files
+dirname = os.path.realpath('')
+csv_train_examples = dirname + "\\data\\e2e-dataset\\trainset.csv"
+#examples, metadata = tfds.load('ted_hrlr_translate/pt_to_en', with_info=True, as_supervised=True)
+#train_examples, val_examples = examples['train'], examples['validation']
+
+# CsvDataset
+def makeDataset(filePath):
+  dataset = tf.data.experimental.CsvDataset(
+    filePath,
+    [tf.string]*2,
+    header=True)
+  return dataset
+
+# load the data
+train_examples = makeDataset(csv_train_examples) #CsvDatasetV2
 
 #############
 # Tokenizer #
 #############
-tokenizer_en = tfds.features.text.SubwordTextEncoder.build_from_corpus((en.numpy() for pt, en in train_examples), target_vocab_size=2**13)
-tokenizer_pt = tfds.features.text.SubwordTextEncoder.build_from_corpus((pt.numpy() for pt, en in train_examples), target_vocab_size=2**13)
-print('Tokenizer is done.')
+tokenizer_in = tfds.features.text.SubwordTextEncoder.build_from_corpus((i.numpy() for i, o in train_examples), target_vocab_size=2**13)
+tokenizer_out = tfds.features.text.SubwordTextEncoder.build_from_corpus((o.numpy() for i, o in train_examples), target_vocab_size=2**13)
+
 # Test the tokenizer
-sample_string = 'Transformer is awesome.'
-tokenized_string = tokenizer_en.encode(sample_string)
-print ('Tokenized string is {}'.format(tokenized_string))
-original_string = tokenizer_en.decode(tokenized_string)
-print ('The original string: {}'.format(original_string))
-assert original_string == sample_string
+test_tokenizer(tokenizer_out)
 
-# The tokenizer encodes the string by breaking it into subwords if the word is not in its dictionary.
-for ts in tokenized_string:
-  print ('{} ----> {}'.format(ts, tokenizer_en.decode([ts])))
-
-BUFFER_SIZE = 20000
-BATCH_SIZE = 64
 
 # Add a start and end token to the input and target.
 def encode(lang1, lang2):
-  lang1 = [tokenizer_pt.vocab_size] + tokenizer_pt.encode(lang1.numpy()) + [tokenizer_pt.vocab_size+1]
-  lang2 = [tokenizer_en.vocab_size] + tokenizer_en.encode(lang2.numpy()) + [tokenizer_en.vocab_size+1]
+  lang1 = [tokenizer_in.vocab_size] + tokenizer_in.encode(lang1.numpy()) + [tokenizer_in.vocab_size+1]
+  lang2 = [tokenizer_out.vocab_size] + tokenizer_out.encode(lang2.numpy()) + [tokenizer_out.vocab_size+1]
   return lang1, lang2
 
 # So you can't .map this function directly: You need to wrap it in a tf.py_function. 
-# The tf.py_function will pass regular tensors (with a value and a .numpy() method to access it), to the wrapped python function.
+# The tf.py_function will pass regular tensors (with a value and a .numpy() method to access it),
+# to the wrapped python function.
 
-def tf_encode(pt, en):
-  result_pt, result_en = tf.py_function(encode, [pt, en], [tf.int64, tf.int64])
-  result_pt.set_shape([None])
-  result_en.set_shape([None])
+def tf_encode(in_put, out_put):
+  result_in, result_out = tf.py_function(encode, [in_put, out_put], [tf.string, tf.string])
+  result_in.set_shape([None])
+  result_out.set_shape([None])
 
-  return result_pt, result_en
+  return result_in, result_out
 
-# To keep this example small and relatively fast, drop examples with a length of over 40 tokens.
-MAX_LENGTH = 40
-
-def filter_max_length(x, y, max_length=MAX_LENGTH):
+def filter_max_length(x, y, max_length=Config.EXAMPLES_MAX_LENGTH):
   return tf.logical_and(tf.size(x) <= max_length, tf.size(y) <= max_length)
 
 train_dataset = train_examples.map(tf_encode)
 train_dataset = train_dataset.filter(filter_max_length)
 
 # cache the dataset to memory to get a speedup while reading from it.
-SHAPE = (64, 40)
 train_dataset = train_dataset.cache()
-train_dataset = train_dataset.shuffle(BUFFER_SIZE).padded_batch(BATCH_SIZE, padded_shapes=SHAPE)
+train_dataset = train_dataset.shuffle(Config.BUFFER_SIZE).padded_batch(Config.BATCH_SIZE, padded_shapes=Config.SHAPE)
 train_dataset = train_dataset.prefetch(tf.data.experimental.AUTOTUNE)
+#!!!!!!!! At this point the dataset becomes PrefetchedDataset...... !!!!!#
+
+sys.exit()
 
 val_dataset = val_examples.map(tf_encode)
 val_dataset = val_dataset.filter(filter_max_length).padded_batch(BATCH_SIZE, padded_shapes=SHAPE)

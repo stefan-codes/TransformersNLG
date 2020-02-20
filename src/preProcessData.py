@@ -10,64 +10,30 @@ csv_train_file_path = dirname + "\\data\\e2e-dataset\\trainset.csv"
 #csv_test_file_path = dirname + "\\data\\e2e-dataset\\testset_w_refs.csv"
 #csv_train_file_path = dirname + "\\data\\e2e-dataset\\trainset3.csv"
 
-# Make numpy values easier to read - whatever that means?
-#np.set_printoptions(precision=3, suppress=True)
-
-defaults = [tf.string] * 2
 # CsvDataset
 def makeDataset(filePath):
-    dataset = tf.data.experimental.CsvDataset(
-      filePath,
-      defaults,
-      header=True)
-    return dataset
-
-# make_csv_dataset
-"""
-def datasetViaMakeCsvDataset(filePath, **kwargs):
-  dataset = tf.data.experimental.make_csv_dataset(
-      filePath,
-      batch_size=1,
-      label_name='ref',
-      header=True,
-      #num_epochs=1,
-      #shuffle=True,                     # var
-      #shuffle_buffer_size=10000,        # var
-      #prefetch_buffer_size=10,          # Recommended value is the number of batches consumed per training step 
-      #ignore_errors=True,
-      **kwargs)
+  dataset = tf.data.experimental.CsvDataset(
+    filePath,
+    [tf.string]*2,
+    header=True)
   return dataset
-"""
 
 # load the data
-#trainDataset = datasetViaMakeCsvDataset(csv_train_file_path) #PrefetchDataset
 trainDataset = makeDataset(csv_train_file_path) #CsvDatasetV2
-#trainDataset = tf.data.Dataset.from_tensor_slices([8, 3, 0, 8, 2, 1]) #TensorSliceDataset
 
-#colNames = ['input','output']
-
+"""
+# Work on the data to updat in a row
 def prepareData(*vals):
   #res = vals[0].encode('utf-8')
   features = tf.convert_to_tensor(vals[0])
   classLabel = tf.convert_to_tensor(vals[1])
-
+  #temp = dict(zip(colNames, tf.convert_to_tensor(trainDataset)))
   return features, classLabel
+#trainDataset = trainDataset.map(prepareData).batch(64)
+"""
 
+data_tokenizer = tfds.features.text.SubwordTextEncoder.build_from_corpus((i.numpy() for i, o in trainDataset), target_vocab_size=2**13)
 
-#temp = dict(zip(colNames, tf.convert_to_tensor(trainDataset)))
-
-#trainDataViaCsvDataset = prepareData(trainDataViaCsvDataset)
-#trainDataset = trainDataset.map(prepareData).batch(1)
-
-for element in trainDataset:
-  print(element[0])
-  break
-
-data_tokenizer = tfds.features.text.SubwordTextEncoder.build_from_corpus((element[0].numpy() for element in trainDataset), target_vocab_size=2**13)
-
-for element in trainDataset:
-  print(element[0])
-  break
 
 sample_string = 'Transformer is awesome.'
 tokenized_string = data_tokenizer.encode(sample_string)

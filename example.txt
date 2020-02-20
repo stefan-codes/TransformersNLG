@@ -26,3 +26,8 @@ tf.Tensor([b'Come check out Alimentum restaurant serving upscale cuisine mid-pri
 
 They both have element_spec:
 (TensorSpec(shape=(), dtype=tf.string, name=None), TensorSpec(shape=(), dtype=tf.string, name=None))
+
+examples is type dict
+train_examples is type DatasetV1Adapter
+
+where my data is tuple
