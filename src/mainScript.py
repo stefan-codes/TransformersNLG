@@ -13,11 +13,10 @@ from config import *
 ##################
 # Input pipeline #
 ##################
-
 # Get the path to the files
 dirname = os.path.realpath('')
-csv_train_examples = dirname + "\\data\\e2e-dataset\\trainset.csv"
-csv_test_examples = dirname + "\\data\\e2e-dataset\\testset.csv"
+csv_train_examples = dirname + "\\data\\e2e-dataset\\trainset.csv" #42,062 entries with label
+csv_test_examples = dirname + "\\data\\e2e-dataset\\testset_w_refs.csv"
 #examples, metadata = tfds.load('ted_hrlr_translate/pt_to_en', with_info=True, as_supervised=True)
 #train_examples, val_examples = examples['train'], examples['validation']
 
@@ -42,19 +41,18 @@ tokenizer_out = tfds.features.text.SubwordTextEncoder.build_from_corpus((o.numpy
 # Test the tokenizer
 test_tokenizer(tokenizer_out)
 
-
 # Add a start and end token to the input and target.
-def encode(lang1, lang2):
-  lang1 = [tokenizer_in.vocab_size] + tokenizer_in.encode(lang1.numpy()) + [tokenizer_in.vocab_size+1]
-  lang2 = [tokenizer_out.vocab_size] + tokenizer_out.encode(lang2.numpy()) + [tokenizer_out.vocab_size+1]
-  return lang1, lang2
+def encode(in_put, out_put):
+  in_put = [tokenizer_in.vocab_size] + tokenizer_in.encode(in_put.numpy()) + [tokenizer_in.vocab_size+1]
+  out_put = [tokenizer_out.vocab_size] + tokenizer_out.encode(out_put.numpy()) + [tokenizer_out.vocab_size+1]
+  return in_put, out_put
 
 # So you can't .map this function directly: You need to wrap it in a tf.py_function. 
 # The tf.py_function will pass regular tensors (with a value and a .numpy() method to access it),
 # to the wrapped python function.
 
 def tf_encode(in_put, out_put):
-  result_in, result_out = tf.py_function(encode, [in_put, out_put], [tf.string, tf.string])
+  result_in, result_out = tf.py_function(encode, [in_put, out_put], [tf.int64, tf.int64])
   result_in.set_shape([None])
   result_out.set_shape([None])
 
@@ -75,8 +73,8 @@ train_dataset = train_dataset.prefetch(tf.data.experimental.AUTOTUNE)
 test_dataset = test_examples.map(tf_encode)
 test_dataset = test_dataset.filter(filter_max_length).padded_batch(Config.BATCH_SIZE, padded_shapes=Config.SHAPE)
 
-in_batch, out_batch = next(iter(test_dataset))
-#pt_batch, en_batch
+# pt_batch, en_batch = next(iter(val_dataset))
+# pt_batch, en_batch
 
 #######################
 # Positional Encoding #
@@ -87,15 +85,11 @@ def get_angles(pos, i, d_model):
 
 def positional_encoding(position, d_model):
   angle_rads = get_angles(np.arange(position)[:, np.newaxis], np.arange(d_model)[np.newaxis, :], d_model)
-  
   # apply sin to even indices in the array; 2i
   angle_rads[:, 0::2] = np.sin(angle_rads[:, 0::2])
-  
   # apply cos to odd indices in the array; 2i+1
   angle_rads[:, 1::2] = np.cos(angle_rads[:, 1::2])
-    
   pos_encoding = angle_rads[np.newaxis, ...]
-    
   return tf.cast(pos_encoding, dtype=tf.float32)
 
 pos_encoding = positional_encoding(50, 512)
@@ -128,9 +122,11 @@ def create_look_ahead_mask(size):
 
 x = tf.random.uniform((1, 3))
 temp = create_look_ahead_mask(x.shape[1])
-temp
+#temp
 
-# Scaled dot product attention
+################################
+# Scaled dot product attention #
+################################
 def scaled_dot_product_attention(q, k, v, mask):
   """Calculate the attention weights.
   q, k, v must have matching leading dimensions.
@@ -148,22 +144,16 @@ def scaled_dot_product_attention(q, k, v, mask):
   Returns:
     output, attention_weights
   """
-
   matmul_qk = tf.matmul(q, k, transpose_b=True)  # (..., seq_len_q, seq_len_k)
-  
   # scale matmul_qk
   dk = tf.cast(tf.shape(k)[-1], tf.float32)
   scaled_attention_logits = matmul_qk / tf.math.sqrt(dk)
-
   # add the mask to the scaled tensor.
   if mask is not None:
     scaled_attention_logits += (mask * -1e9)  
-
   # softmax is normalized on the last axis (seq_len_k) so that the scores add up to 1.
   attention_weights = tf.nn.softmax(scaled_attention_logits, axis=-1)  # (..., seq_len_q, seq_len_k)
-
   output = tf.matmul(attention_weights, v)  # (..., seq_len_q, depth_v)
-
   return output, attention_weights
 
 def print_out(q, k, v):
@@ -204,7 +194,6 @@ print_out(temp_q, temp_k, temp_v)
 ########################
 # Multi-Head Attention #
 ########################
-
 class MultiHeadAttention(tf.keras.layers.Layer):
   def __init__(self, d_model, num_heads):
     super(MultiHeadAttention, self).__init__()
@@ -263,7 +252,6 @@ out.shape, attn.shape
 ###################################
 # Point wise feed forward network #
 ###################################
-
 def point_wise_feed_forward_network(d_model, dff):
   return tf.keras.Sequential([
       tf.keras.layers.Dense(dff, activation='relu'),  # (batch_size, seq_len, dff)
@@ -276,7 +264,6 @@ sample_ffn(tf.random.uniform((64, 50, 512))).shape
 ###########
 # Encoder #
 ###########
-
 class EncoderLayer(tf.keras.layers.Layer):
   def __init__(self, d_model, num_heads, dff, rate=0.1):
     super(EncoderLayer, self).__init__()
@@ -304,8 +291,7 @@ class EncoderLayer(tf.keras.layers.Layer):
 
 sample_encoder_layer = EncoderLayer(512, 8, 2048)
 
-sample_encoder_layer_output = sample_encoder_layer(
-    tf.random.uniform((64, 43, 512)), False, None)
+sample_encoder_layer_output = sample_encoder_layer(tf.random.uniform((64, 43, 512)), False, None)
 
 sample_encoder_layer_output.shape  # (batch_size, input_seq_len, d_model)
 
@@ -316,15 +302,9 @@ class Encoder(tf.keras.layers.Layer):
 
     self.d_model = d_model
     self.num_layers = num_layers
-    
     self.embedding = tf.keras.layers.Embedding(input_vocab_size, d_model)
-    self.pos_encoding = positional_encoding(maximum_position_encoding, 
-                                            self.d_model)
-    
-    
-    self.enc_layers = [EncoderLayer(d_model, num_heads, dff, rate) 
-                       for _ in range(num_layers)]
-  
+    self.pos_encoding = positional_encoding(maximum_position_encoding, self.d_model)
+    self.enc_layers = [EncoderLayer(d_model, num_heads, dff, rate) for _ in range(num_layers)]
     self.dropout = tf.keras.layers.Dropout(rate)
         
   def call(self, x, training, mask):
@@ -355,7 +335,6 @@ print (sample_encoder_output.shape)  # (batch_size, input_seq_len, d_model)
 ###########
 # Decoder #
 ###########
-
 class DecoderLayer(tf.keras.layers.Layer):
   def __init__(self, d_model, num_heads, dff, rate=0.1):
     super(DecoderLayer, self).__init__()
@@ -381,8 +360,7 @@ class DecoderLayer(tf.keras.layers.Layer):
     attn1 = self.dropout1(attn1, training=training)
     out1 = self.layernorm1(attn1 + x)
     
-    attn2, attn_weights_block2 = self.mha2(
-        enc_output, enc_output, out1, padding_mask)  # (batch_size, target_seq_len, d_model)
+    attn2, attn_weights_block2 = self.mha2(enc_output, enc_output, out1, padding_mask)  # (batch_size, target_seq_len, d_model)
     attn2 = self.dropout2(attn2, training=training)
     out2 = self.layernorm2(attn2 + out1)  # (batch_size, target_seq_len, d_model)
     
@@ -407,16 +385,12 @@ class Decoder(tf.keras.layers.Layer):
 
     self.d_model = d_model
     self.num_layers = num_layers
-    
     self.embedding = tf.keras.layers.Embedding(target_vocab_size, d_model)
     self.pos_encoding = positional_encoding(maximum_position_encoding, d_model)
-    
-    self.dec_layers = [DecoderLayer(d_model, num_heads, dff, rate) 
-                       for _ in range(num_layers)]
+    self.dec_layers = [DecoderLayer(d_model, num_heads, dff, rate) for _ in range(num_layers)]
     self.dropout = tf.keras.layers.Dropout(rate)
     
-  def call(self, x, enc_output, training, 
-           look_ahead_mask, padding_mask):
+  def call(self, x, enc_output, training, look_ahead_mask, padding_mask):
 
     seq_len = tf.shape(x)[1]
     attention_weights = {}
@@ -428,9 +402,7 @@ class Decoder(tf.keras.layers.Layer):
     x = self.dropout(x, training=training)
 
     for i in range(self.num_layers):
-      x, block1, block2 = self.dec_layers[i](x, enc_output, training,
-                                             look_ahead_mask, padding_mask)
-      
+      x, block1, block2 = self.dec_layers[i](x, enc_output, training, look_ahead_mask, padding_mask)
       attention_weights['decoder_layer{}_block1'.format(i+1)] = block1
       attention_weights['decoder_layer{}_block2'.format(i+1)] = block2
     
@@ -453,7 +425,6 @@ output.shape, attn['decoder_layer2_block2'].shape
 ##########################
 # Create the Transformer #
 ##########################
-
 class Transformer(tf.keras.Model):
   def __init__(self, num_layers, d_model, num_heads, dff, input_vocab_size, 
                target_vocab_size, pe_input, pe_target, rate=0.1):
@@ -465,13 +436,9 @@ class Transformer(tf.keras.Model):
     
   def call(self, inp, tar, training, enc_padding_mask, look_ahead_mask, dec_padding_mask):
     enc_output = self.encoder(inp, training, enc_padding_mask)  # (batch_size, inp_seq_len, d_model)
-    
     # dec_output.shape == (batch_size, tar_seq_len, d_model)
-    dec_output, attention_weights = self.decoder(
-        tar, enc_output, training, look_ahead_mask, dec_padding_mask)
-    
+    dec_output, attention_weights = self.decoder(tar, enc_output, training, look_ahead_mask, dec_padding_mask)
     final_output = self.final_layer(dec_output)  # (batch_size, tar_seq_len, target_vocab_size)
-    
     return final_output, attention_weights
 
 sample_transformer = Transformer(
@@ -489,11 +456,9 @@ fn_out, _ = sample_transformer(temp_input, temp_target, training=False,
 
 fn_out.shape  # (batch_size, tar_seq_len, target_vocab_size)
 
-
 ###################
 # Hyperparameters #
 ###################
-
 num_layers = 4
 d_model = 128
 dff = 512
@@ -506,14 +471,12 @@ dropout_rate = 0.1
 #############
 # Optimizer #
 #############
-
 class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
   def __init__(self, d_model, warmup_steps=4000):
     super(CustomSchedule, self).__init__()
-    
+  
     self.d_model = d_model
     self.d_model = tf.cast(self.d_model, tf.float32)
-
     self.warmup_steps = warmup_steps
     
   def __call__(self, step):
@@ -533,7 +496,6 @@ plt.xlabel("Train Step")
 ####################
 # Loss and metrics #
 ####################
-
 loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, reduction='none')
 
 def loss_function(real, pred):
@@ -551,7 +513,6 @@ train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='train_accuracy
 ##############################
 # Training and Checkpointing #
 ##############################
-
 transformer = Transformer(num_layers, d_model, num_heads, dff,
                           input_vocab_size, target_vocab_size, 
                           pe_input=input_vocab_size, 
@@ -586,8 +547,6 @@ if ckpt_manager.latest_checkpoint:
   ckpt.restore(ckpt_manager.latest_checkpoint)
   print ('Latest checkpoint restored!!')
 
-EPOCHS = 20
-
 # The @tf.function trace-compiles train_step into a TF graph for faster
 # execution. The function specializes to the precise shape of the argument
 # tensors. To avoid re-tracing due to the variable sequence lengths or variable
@@ -620,7 +579,7 @@ def train_step(inp, tar):
   train_loss(loss)
   train_accuracy(tar_real, predictions)
 
-for epoch in range(EPOCHS):
+for epoch in range(Config.EPOCHS):
   start = time.time()
   
   train_loss.reset_states()
@@ -630,7 +589,7 @@ for epoch in range(EPOCHS):
   for (batch, (inp, tar)) in enumerate(train_dataset):
     train_step(inp, tar)
     
-    if batch % 50 == 0:
+    if batch % Config.GPU_BATCH_SIZE == 0:
       print ('Epoch {} Batch {} Loss {:.4f} Accuracy {:.4f}'.format(
           epoch + 1, batch, train_loss.result(), train_accuracy.result()))
       
@@ -653,7 +612,7 @@ def evaluate(inp_sentence):
   start_token = [tokenizer_in.vocab_size]
   end_token = [tokenizer_in.vocab_size + 1]
   
-  # inp sentence is portuguese, hence adding the start and end token
+  # inp sentence is input data, hence adding the start and end token
   inp_sentence = start_token + tokenizer_in.encode(inp_sentence) + end_token
   encoder_input = tf.expand_dims(inp_sentence, 0)
   
@@ -706,17 +665,9 @@ def plot_attention_weights(attention, sentence, result, layer):
     
     ax.set_xticks(range(len(sentence)+2))
     ax.set_yticks(range(len(result)))
-    
     ax.set_ylim(len(result)-1.5, -0.5)
-        
-    ax.set_xticklabels(
-        ['<start>']+[tokenizer_in.decode([i]) for i in sentence]+['<end>'], 
-        fontdict=fontdict, rotation=90)
-    
-    ax.set_yticklabels([tokenizer_out.decode([i]) for i in result 
-                        if i < tokenizer_out.vocab_size], 
-                       fontdict=fontdict)
-    
+    ax.set_xticklabels(['<start>']+[tokenizer_in.decode([i]) for i in sentence]+['<end>'], fontdict=fontdict, rotation=90)
+    ax.set_yticklabels([tokenizer_out.decode([i]) for i in result if i < tokenizer_out.vocab_size], fontdict=fontdict)
     ax.set_xlabel('Head {}'.format(head+1))
   
   plt.tight_layout()
@@ -725,8 +676,7 @@ def plot_attention_weights(attention, sentence, result, layer):
 def translate(sentence, plot=''):
   result, attention_weights = evaluate(sentence)
   
-  predicted_sentence = tokenizer_out.decode([i for i in result 
-                                            if i < tokenizer_out.vocab_size])  
+  predicted_sentence = tokenizer_out.decode([i for i in result if i < tokenizer_out.vocab_size])  
 
   print('Input: {}'.format(sentence))
   print('Predicted translation: {}'.format(predicted_sentence))
@@ -734,7 +684,5 @@ def translate(sentence, plot=''):
   if plot:
     plot_attention_weights(attention_weights, sentence, result, plot)
 
-translate("este é um problema que temos que resolver.")
-print ("Real translation: this is a problem we have to solve .")
-
-print("I am done with that")
+translate("name[Blue Spice], eatType[pub], customer rating[average], near[Burger King]")
+print ("Suggested output is: Average customer rating pub include Blue Spice near Burger King.")
