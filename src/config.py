@@ -3,7 +3,7 @@
 #############
 VOCAB_SIZE = 2**13          # Max size of the dictionary (from 1 to the number for encoding)
 FILTER_BY_LENGTH = True
-EXAMPLES_MAX_LENGTH = 40    # To keep this example small and relatively fast, drop examples with a length of over 40 tokens.
+EXAMPLES_MAX_LENGTH = 15    # To keep this example small and relatively fast, drop examples with a length of over 40 tokens.
 BATCH_SIZE = 64
 SHUFFLE_BUFFER_SIZE = 43_000     # For perfect shuffling, a buffer size greater than or equal to the full size of the dataset is required.
 EPOCHS = 20

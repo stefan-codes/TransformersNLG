@@ -40,45 +40,35 @@ def test_tokenizer(tokenizer):
 def filter_max_length(x, y, max_length=c.EXAMPLES_MAX_LENGTH):
   return tf.logical_and(tf.size(x) <= max_length, tf.size(y) <= max_length)
 
-mr_tokenizer = None
-ref_tokenizer = None
-
-# Add a start and end token to the mr and ref
-def encode(mr, ref):
-    mr = [mr_tokenizer.vocab_size] + mr_tokenizer.encode(mr.numpy()) + [mr_tokenizer.vocab_size+1]
-    ref = [ref_tokenizer.vocab_size] + ref_tokenizer.encode(ref.numpy()) + [ref_tokenizer.vocab_size+1]
-    return mr, ref
-
-# So you can't .map this function directly: You need to wrap it in a tf.py_function. 
-# The tf.py_function will pass regular tensors (with a value and a .numpy() method to access it),
-# to the wrapped python function.
-def tf_encode(mr, ref):
-    result_mr, result_ref = tf.py_function(encode, [mr, ref], [tf.int64, tf.int64])
-    result_mr.set_shape([None])
-    result_ref.set_shape([None])
-    return result_mr, result_ref
-
 # encode and update the datasets
-def encode_datasets(train_examples, test_examples, mr_tok, ref_tok):
-    global mr_tokenizer, ref_tokenizer
-    mr_tokenizer = mr_tok
-    ref_tokenizer = ref_tok
+def encode_datasets(train_examples, test_examples, mr_tokenizer, ref_tokenizer):
+    # Add a start and end token to the mr and ref
+    def encode(mr, ref):
+        mr = [mr_tokenizer.vocab_size] + mr_tokenizer.encode(mr.numpy()) + [mr_tokenizer.vocab_size+1]
+        ref = [ref_tokenizer.vocab_size] + ref_tokenizer.encode(ref.numpy()) + [ref_tokenizer.vocab_size+1]
+        return mr, ref
+
+    # So you can't .map this function directly: You need to wrap it in a tf.py_function. 
+    # The tf.py_function will pass regular tensors (with a value and a .numpy() method to access it),
+    # to the wrapped python function.
+    def tf_encode(mr, ref):
+        result_mr, result_ref = tf.py_function(encode, [mr, ref], [tf.int64, tf.int64])
+        result_mr.set_shape([None])
+        result_ref.set_shape([None])
+        return result_mr, result_ref
 
     train_dataset = train_examples.map(tf_encode)
 
-    print(next(iter(train_dataset)))
-
+    #TODO: remove the filter by length
     if c.FILTER_BY_LENGTH :
         train_dataset = train_dataset.filter(filter_max_length)
         c.update_padded_shape()
 
     # cache the dataset to memory to get a speedup while reading from it.
     train_dataset = train_dataset.cache()
-    print(type(train_dataset))
     train_dataset = train_dataset.shuffle(c.SHUFFLE_BUFFER_SIZE).padded_batch(c.BATCH_SIZE, padded_shapes=c.padded_shape)
     train_dataset = train_dataset.prefetch(tf.data.experimental.AUTOTUNE) #PrefetchedDataset its an optimization
 
-    #test_dataset = [tf_encode(mr, ref, mr_tokenizer, ref_tokenizer) for mr, ref in test_examples]
     test_dataset = test_examples.map(tf_encode)
     if c.FILTER_BY_LENGTH :
         test_dataset = test_dataset.filter(filter_max_length)

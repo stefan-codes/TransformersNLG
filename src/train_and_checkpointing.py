@@ -61,6 +61,15 @@ def train_the_transformer(transformer, train_dataset, checkpoint_path):
     train_loss(loss)
     train_accuracy(tar_real, predictions)
 
+# Create the checkpoint manager. This will be used to save checkpoints every n epochs.
+  ckpt = tf.train.Checkpoint(transformer=transformer, optimizer=optimizer)
+  ckpt_manager = tf.train.CheckpointManager(ckpt, checkpoint_path, max_to_keep=5)
+
+  # if a checkpoint exists, restore the latest checkpoint.
+  if ckpt_manager.latest_checkpoint:
+    ckpt.restore(ckpt_manager.latest_checkpoint)
+    print ('Latest checkpoint restored!!')  
+    
   for epoch in range(c.EPOCHS):
     start = time.time()
     train_loss.reset_states()
@@ -82,14 +91,7 @@ def train_the_transformer(transformer, train_dataset, checkpoint_path):
 
 
 
-  # Create the checkpoint manager. This will be used to save checkpoints every n epochs.
-  ckpt = tf.train.Checkpoint(transformer=transformer, optimizer=optimizer)
-  ckpt_manager = tf.train.CheckpointManager(ckpt, checkpoint_path, max_to_keep=5)
-
-  # if a checkpoint exists, restore the latest checkpoint.
-  if ckpt_manager.latest_checkpoint:
-    ckpt.restore(ckpt_manager.latest_checkpoint)
-    print ('Latest checkpoint restored!!')  
+  
 
 
 

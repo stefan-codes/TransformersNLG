@@ -5,7 +5,7 @@ from train_and_checkpointing import create_masks
 
 def evaluate(mr, mr_tokenizer, ref_tokenizer, transformer):
   start_token = [mr_tokenizer.vocab_size]
-  end_token = [ref_tokenizer.vocab_size + 1]
+  end_token = [mr_tokenizer.vocab_size + 1]
   
   # inp sentence is input data, hence adding the start and end token
   mr = start_token + mr_tokenizer.encode(mr) + end_token
@@ -16,6 +16,7 @@ def evaluate(mr, mr_tokenizer, ref_tokenizer, transformer):
   decoder_input = [mr_tokenizer.vocab_size]
   output = tf.expand_dims(decoder_input, 0)
     
+  #TODO: update to a while loop  
   for i in range(c.EXAMPLES_MAX_LENGTH):
     enc_padding_mask, combined_mask, dec_padding_mask = create_masks(encoder_input, output)
   
@@ -31,8 +32,7 @@ def evaluate(mr, mr_tokenizer, ref_tokenizer, transformer):
     if predicted_id == ref_tokenizer.vocab_size+1:
       return tf.squeeze(output, axis=0), attention_weights
     
-    # concatentate the predicted_id to the output which is given to the decoder
-    # as its input.
+    # concatentate the predicted_id to the output which is given to the decoder as its input.
     output = tf.concat([output, predicted_id], axis=-1)
 
   return tf.squeeze(output, axis=0), attention_weights
