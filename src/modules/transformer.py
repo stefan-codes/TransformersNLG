@@ -1,6 +1,7 @@
 import tensorflow as tf
-from encoder import Encoder
-from decoder import Decoder
+import config
+from modules.encoder import Encoder
+from modules.decoder import Decoder
 
 class Transformer(tf.keras.Model):
   def __init__(self, num_layers, d_model, num_heads, dff, input_vocab_size, 
@@ -17,3 +18,13 @@ class Transformer(tf.keras.Model):
     dec_output, attention_weights = self.decoder(tar, enc_output, training, look_ahead_mask, dec_padding_mask)
     final_output = self.final_layer(dec_output)  # (batch_size, tar_seq_len, target_vocab_size)
     return final_output, attention_weights
+
+# interface
+def create_transformer(input_pipeline):
+  # Get the vocab size of the 
+  mr_vocab_size = input_pipeline.mr_tokenizer.vocab_size + 2
+  ref_vocab_size = input_pipeline.ref_tokenizer.vocab_size + 2
+
+  tr = Transformer(config.num_layers, config.d_model, config.num_heads, config.dff, mr_vocab_size, ref_vocab_size, 
+                        pe_input=mr_vocab_size, pe_target=ref_vocab_size, rate=config.dropout_rate)
+  return tr

@@ -1,10 +1,10 @@
 import time
 import tensorflow as tf
-import config as c
-from masking import create_padding_mask
-from masking import create_look_ahead_mask
-from optimizer import CustomSchedule
-from loss_and_metrics import loss_function
+import config
+from modules.masking import create_padding_mask
+from modules.masking import create_look_ahead_mask
+from modules.optimizer import CustomSchedule
+from modules.loss_and_metrics import loss_function
 
 def create_masks(inp, tar):
   # Encoder padding mask
@@ -23,9 +23,9 @@ def create_masks(inp, tar):
   
   return enc_padding_mask, combined_mask, dec_padding_mask
 
-def train_the_transformer(transformer, train_dataset, checkpoint_path):
+def train_the_transformer(transformer, train_dataset):
   # Create a default optimizer
-  learning_rate = CustomSchedule(c.d_model)
+  learning_rate = CustomSchedule(config.d_model)
   optimizer = tf.keras.optimizers.Adam(learning_rate, beta_1=0.9, beta_2=0.98, epsilon=1e-9)
 
   # TODO: setting the train loss and accuracy?
@@ -61,21 +61,21 @@ def train_the_transformer(transformer, train_dataset, checkpoint_path):
     train_loss(loss)
     train_accuracy(tar_real, predictions)
 
-# Create the checkpoint manager. This will be used to save checkpoints every n epochs.
+  # Create the checkpoint manager. This will be used to save checkpoints every n epochs.
   ckpt = tf.train.Checkpoint(transformer=transformer, optimizer=optimizer)
-  ckpt_manager = tf.train.CheckpointManager(ckpt, checkpoint_path, max_to_keep=5)
+  ckpt_manager = tf.train.CheckpointManager(ckpt, config.checkpoint_path, max_to_keep=5)
 
   # if a checkpoint exists, restore the latest checkpoint.
   if ckpt_manager.latest_checkpoint:
     ckpt.restore(ckpt_manager.latest_checkpoint)
     print ('Latest checkpoint restored!!')  
     
-  for epoch in range(c.EPOCHS):
+  for epoch in range(config.EPOCHS):
     start = time.time()
     train_loss.reset_states()
     train_accuracy.reset_states()
 
-    # inp -> portuguese, tar -> english
+    # inp -> mr, tar -> ref
     for (batch, (inp, tar)) in enumerate(train_dataset):
       train_step(inp, tar)
   
@@ -88,7 +88,6 @@ def train_the_transformer(transformer, train_dataset, checkpoint_path):
     
     print ('Epoch {} Loss {:.4f} Accuracy {:.4f}'.format(epoch + 1, train_loss.result(), train_accuracy.result()))
     print ('Time taken for 1 epoch: {} secs\n'.format(time.time() - start))
-
 
 
   

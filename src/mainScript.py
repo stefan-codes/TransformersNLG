@@ -1,52 +1,48 @@
+from __future__ import absolute_import, division, print_function, unicode_literals
 import os
-import tensorflow as tf
-import config as c
 import sys
-
-from input_pipeline import load_dataset_examples
-from input_pipeline import create_tokenizers
-from input_pipeline import encode_datasets
-from transformer import Transformer
-from optimizer import CustomSchedule
-from train_and_checkpointing import train_the_transformer
-from evaluate import generate_sentence
-
-###############################
-# mr - meaning representation #
-# ref - reference             #
-###############################
-
-# Set up the paths to the train and test data
-dirname = os.path.realpath('')
-csv_train_examples = dirname + "\\data\\e2e-dataset\\trainset.csv"          #42,062 entries with label
-csv_test_examples = dirname + "\\data\\e2e-dataset\\testset_w_refs.csv"
-
-# Defaults describing the data for making a tensorflow-dataset
-defaults = [tf.string]*2
-
-# Make datasets with the examples
-train_examples, test_examples = load_dataset_examples(csv_train_examples, csv_test_examples, defaults)
-
-# Create the tokenizers
-mr_tokenizer, ref_tokenizer = create_tokenizers(train_examples)
-
-# Encode the data
-train_dataset, test_dataset = encode_datasets(train_examples, test_examples, mr_tokenizer, ref_tokenizer)
+import config
+import tensorflow as tf
+import nltk
+from modules.input_pipeline import create_input_pipeline
+from modules.transformer import create_transformer
+from modules.train_and_checkpointing import train_the_transformer
+from modules.evaluate import generate_sentence
+from nltk.translate.bleu_score import sentence_bleu
+# from optimizer import CustomSchedule
 
 
-# Get the vocab size of the 
-mr_vocab_size = mr_tokenizer.vocab_size + 2
-ref_vocab_size = ref_tokenizer.vocab_size + 2
+# mr - meaning representation
+# ref - reference             
+
+# Initialize the input pipeline
+input_pipeline = create_input_pipeline()
+# input_pipeline.test_tokenizer(input_pipeline.ref_tokenizer, "This is so awesome!")
+# input_pipeline.print_dataset_example(input_pipeline.test_dataset)
 
 # Create the transformer
-transformer = Transformer(c.num_layers, c.d_model, c.num_heads, c.dff, mr_vocab_size, ref_vocab_size, 
-                        pe_input=mr_vocab_size, pe_target=ref_vocab_size, rate=c.dropout_rate)
-
-# Set the check point save location
-checkpoint_path = "./checkpoints/train"
+transformer = create_transformer(input_pipeline)
 
 # Train the transformer
-train_the_transformer(transformer, train_dataset, checkpoint_path)
+train_the_transformer(transformer, input_pipeline.train_dataset)
+
+#TODO Evaluate
+example = next(iter(input_pipeline.test_examples))
+mr_example = str(example[0].numpy(), 'utf-8')
+ref_example = str(example[1].numpy(), 'utf-8')
+# print(str(mr_example.numpy(), 'utf-8'), str(ref_example.numpy(), 'utf-8'))
+predicted_sentence = generate_sentence(mr_example, ref_example, input_pipeline, transformer)
+
+#TODO bleu score
+prediction = nltk.word_tokenize(predicted_sentence)
+reference = nltk.word_tokenize(ref_example)
+#reference = [['this', 'is', 'a', 'test'], ['this', 'is' 'test']]
+#prediction = ['this', 'is', 'a', 'test']
+score = sentence_bleu(reference, prediction, weights=(1.0,0.0,0.0,0.0))
+print(score)
+
+sys.exit()
+
 
 #TODO: Run the whole validation set
 """
@@ -57,13 +53,6 @@ asd = next(iter())
 print(str(asd, 'utf-8'))
 """
 
-# Just an example for the screen
-example = next(iter(train_examples))
-mr_example = str(example[0].numpy(), 'utf-8')
-ref_example = str(example[1].numpy(), 'utf-8')
-#print(str(mr_example.numpy(), 'utf-8'), str(ref_example.numpy(), 'utf-8'))
 
-# Evaluate
-generate_sentence(mr_example, ref_example, mr_tokenizer, ref_tokenizer, transformer)
 
 print("Done so far!")

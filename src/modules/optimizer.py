@@ -1,6 +1,6 @@
 import tensorflow as tf
-#import matplotlib.pyplot as plt
-#from config import *
+import matplotlib.pyplot as plt
+import config
 
 class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
   def __init__(self, d_model, warmup_steps=4000):
@@ -16,10 +16,8 @@ class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
     
     return tf.math.rsqrt(self.d_model) * tf.math.minimum(arg1, arg2)
 
-"""
 def plot_learning_rate():
-  temp_learning_rate_schedule = CustomSchedule(d_model)
+  temp_learning_rate_schedule = CustomSchedule(config.d_model)
   plt.plot(temp_learning_rate_schedule(tf.range(40000, dtype=tf.float32)))
   plt.ylabel("Learning Rate")
   plt.xlabel("Train Step")
-"""

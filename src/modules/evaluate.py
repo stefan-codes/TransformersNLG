@@ -1,7 +1,7 @@
 import tensorflow as tf
 import config as c
 #import matplotlib.pyplot as plt
-from train_and_checkpointing import create_masks
+from modules.train_and_checkpointing import create_masks
 
 def evaluate(mr, mr_tokenizer, ref_tokenizer, transformer):
   start_token = [mr_tokenizer.vocab_size]
@@ -64,14 +64,15 @@ def plot_attention_weights(attention, sentence, result, layer):
   plt.show()
 """
 
-def generate_sentence(mr, ref, mr_tokenizer, ref_tokenizer, transformer, plot=''):
-  result, attention_weights = evaluate(mr, mr_tokenizer, ref_tokenizer, transformer)
+def generate_sentence(mr, ref, input_pipeline, transformer, plot=''):
+  result, attention_weights = evaluate(mr, input_pipeline.mr_tokenizer, input_pipeline.ref_tokenizer, transformer)
   
-  predicted_sentence = ref_tokenizer.decode([i for i in result if i < ref_tokenizer.vocab_size])  
+  predicted_sentence = input_pipeline.ref_tokenizer.decode([i for i in result if i < input_pipeline.ref_tokenizer.vocab_size])  
 
   print('Meaning Representation: {}'.format(mr))
   print('Predicted translation: {}'.format(predicted_sentence))
   print('Reference: {}'.format(ref))
+  return predicted_sentence
   
   #if plot:
    # plot_attention_weights(attention_weights, sentence, result, plot)

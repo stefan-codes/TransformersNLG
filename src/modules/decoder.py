@@ -1,7 +1,7 @@
 import tensorflow as tf
-from multi_head_attention import MultiHeadAttention
-from point_wise_feed_forward_network import point_wise_feed_forward_network
-from positional_encoding import positional_encoding
+from modules.multi_head_attention import MultiHeadAttention
+from modules.point_wise_feed_forward_network import point_wise_feed_forward_network
+from modules.positional_encoding import positional_encoding
 
 #################
 # Decoder Layer #
