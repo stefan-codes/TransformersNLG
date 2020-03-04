@@ -16,7 +16,9 @@ def evaluate(mr, mr_tokenizer, ref_tokenizer, transformer):
   decoder_input = [mr_tokenizer.vocab_size]
   output = tf.expand_dims(decoder_input, 0)
     
-  #TODO: update to a while loop  
+  # update to a while loop -> Keep it as for for now so it works for limiting the examples.
+  # For running all of the data, put relatively large number e.g. 200.
+  # Thats not a problem since we end thesentence at the end token anyway
   for i in range(c.EXAMPLES_MAX_LENGTH):
     enc_padding_mask, combined_mask, dec_padding_mask = create_masks(encoder_input, output)
   
@@ -37,32 +39,31 @@ def evaluate(mr, mr_tokenizer, ref_tokenizer, transformer):
 
   return tf.squeeze(output, axis=0), attention_weights
 
-"""
-def plot_attention_weights(attention, sentence, result, layer):
-  fig = plt.figure(figsize=(16, 8))
-  
-  sentence = tokenizer_in.encode(sentence)
-  
-  attention = tf.squeeze(attention[layer], axis=0)
-  
-  for head in range(attention.shape[0]):
-    ax = fig.add_subplot(2, 4, head+1)
-    
-    # plot the attention weights
-    ax.matshow(attention[head][:-1, :], cmap='viridis')
 
-    fontdict = {'fontsize': 10}
-    
-    ax.set_xticks(range(len(sentence)+2))
-    ax.set_yticks(range(len(result)))
-    ax.set_ylim(len(result)-1.5, -0.5)
-    ax.set_xticklabels(['<start>']+[tokenizer_in.decode([i]) for i in sentence]+['<end>'], fontdict=fontdict, rotation=90)
-    ax.set_yticklabels([tokenizer_out.decode([i]) for i in result if i < tokenizer_out.vocab_size], fontdict=fontdict)
-    ax.set_xlabel('Head {}'.format(head+1))
+# def plot_attention_weights(attention, sentence, result, layer):
+#   fig = plt.figure(figsize=(16, 8))
   
-  plt.tight_layout()
-  plt.show()
-"""
+#   sentence = tokenizer_in.encode(sentence)
+  
+#   attention = tf.squeeze(attention[layer], axis=0)
+  
+#   for head in range(attention.shape[0]):
+#     ax = fig.add_subplot(2, 4, head+1)
+    
+#     # plot the attention weights
+#     ax.matshow(attention[head][:-1, :], cmap='viridis')
+
+#     fontdict = {'fontsize': 10}
+    
+#     ax.set_xticks(range(len(sentence)+2))
+#     ax.set_yticks(range(len(result)))
+#     ax.set_ylim(len(result)-1.5, -0.5)
+#     ax.set_xticklabels(['<start>']+[tokenizer_in.decode([i]) for i in sentence]+['<end>'], fontdict=fontdict, rotation=90)
+#     ax.set_yticklabels([tokenizer_out.decode([i]) for i in result if i < tokenizer_out.vocab_size], fontdict=fontdict)
+#     ax.set_xlabel('Head {}'.format(head+1))
+  
+#   plt.tight_layout()
+#   plt.show()
 
 def generate_sentence(mr, input_pipeline, transformer, plot=''):
   result, attention_weights = evaluate(mr, input_pipeline.mr_tokenizer, input_pipeline.ref_tokenizer, transformer)
