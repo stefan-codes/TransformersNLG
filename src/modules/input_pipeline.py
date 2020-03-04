@@ -69,22 +69,21 @@ def encode_examples(train_examples, test_examples, mr_tokenizer, ref_tokenizer):
 
 
     train_dataset = train_examples.map(tf_encode)
-    padded_shape = ([2],[None])
-    #TODO: remove the filter by length
+    #padded_shape = ([None],[None])
     if config.FILTER_BY_LENGTH :
         train_dataset = train_dataset.filter(filter_max_length)
-        padded_shape = (config.BATCH_SIZE, config.EXAMPLES_MAX_LENGTH)
+        #padded_shape = (config.BATCH_SIZE, config.EXAMPLES_MAX_LENGTH)
 
     # cache the dataset to memory to get a speedup while reading from it.
     train_dataset = train_dataset.cache()
-    train_dataset = train_dataset.shuffle(config.SHUFFLE_BUFFER_SIZE).padded_batch(config.BATCH_SIZE, padded_shapes=padded_shape)
+    train_dataset = train_dataset.shuffle(config.SHUFFLE_BUFFER_SIZE).padded_batch(config.BATCH_SIZE, padded_shapes=([None],[None]))
     train_dataset = train_dataset.prefetch(tf.data.experimental.AUTOTUNE) #PrefetchedDataset its an optimization
 
     test_dataset = test_examples.map(tf_encode)
     if config.FILTER_BY_LENGTH :
         test_dataset = test_dataset.filter(filter_max_length)
         
-    test_dataset = test_dataset.padded_batch(config.BATCH_SIZE, padded_shapes=padded_shape)
+    test_dataset = test_dataset.padded_batch(config.BATCH_SIZE, padded_shapes=([None], [None]))
 
     return train_dataset, test_dataset
 

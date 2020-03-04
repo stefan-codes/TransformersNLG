@@ -4,13 +4,13 @@ import sys
 import config
 import tensorflow as tf
 import nltk
+import csv
+# nltk.download('punkt')
 from modules.input_pipeline import create_input_pipeline
 from modules.transformer import create_transformer
 from modules.train_and_checkpointing import train_the_transformer
 from modules.evaluate import generate_sentence
 from nltk.translate.bleu_score import sentence_bleu
-# from optimizer import CustomSchedule
-
 
 # mr - meaning representation
 # ref - reference             
@@ -26,32 +26,50 @@ transformer = create_transformer(input_pipeline)
 # Train the transformer
 train_the_transformer(transformer, input_pipeline.train_dataset)
 
-#TODO Evaluate
-example = next(iter(input_pipeline.test_examples))
-mr_example = str(example[0].numpy(), 'utf-8')
-ref_example = str(example[1].numpy(), 'utf-8')
-# print(str(mr_example.numpy(), 'utf-8'), str(ref_example.numpy(), 'utf-8'))
-predicted_sentence = generate_sentence(mr_example, ref_example, input_pipeline, transformer)
+# Write to a csv
+file_name = 'first.csv'
+with open(file_name, 'a+', newline='') as csv_file:
 
-#TODO bleu score
-prediction = nltk.word_tokenize(predicted_sentence)
-reference = nltk.word_tokenize(ref_example)
-#reference = [['this', 'is', 'a', 'test'], ['this', 'is' 'test']]
-#prediction = ['this', 'is', 'a', 'test']
-score = sentence_bleu(reference, prediction, weights=(1.0,0.0,0.0,0.0))
-print(score)
+    header_names = ['mr', 'ref', 'prediction', '1-gram', '2-gram', '3-gram', '4-gram']
+    the_writer = csv.DictWriter(csv_file, fieldnames=header_names)
 
-sys.exit()
+    the_writer.writeheader()
 
+    counter = 0
+    # Evaluate
+    for entry in input_pipeline.test_examples:
+        print('1')
+        # Get a prediction
+        mr,ref = entry
+        mr_example = str(mr.numpy(), 'utf-8')
+        ref_example = str(ref.numpy(), 'utf-8')
+        predicted_sentence = generate_sentence(mr_example, input_pipeline, transformer)
 
-#TODO: Run the whole validation set
-"""
-for kk in (mr.numpy() for mr, ref in train_examples):
-    print(str(kk, 'utf-8'))
-    
-asd = next(iter())
-print(str(asd, 'utf-8'))
-"""
+        print('2')
+        # Get the bleu scores
+        prediction = nltk.word_tokenize(predicted_sentence)
+        reference = nltk.word_tokenize(ref_example)
+        list_references = []
+        list_references.append(reference)
+        one_gram = sentence_bleu(list_references, prediction, weights=(1,0,0,0))
+        two_gram = sentence_bleu(list_references, prediction, weights=(0,1,0,0))
+        three_gram = sentence_bleu(list_references, prediction, weights=(0,0,1,0))
+        four_gram = sentence_bleu(list_references, prediction, weights=(0,0,0,1))
+
+        print('3')
+        # write to the file
+        the_writer.writerow({'mr' : mr_example, 'ref' : ref_example, 'prediction' : predicted_sentence, 
+                            '1-gram' : '%.4f' % one_gram, '2-gram' : '%.4f' % two_gram, '3-gram' : '%.4f' % three_gram, '4-gram' : '%.4f' % four_gram})
+
+        print('4')
+        counter = counter + 1
+        if counter % 10 == 0 :
+            print(counter)
+    # print('Individual 1-gram: %.4f' % one_gram)
+    # print('Individual 2-gram: %.4f' % two_gram)
+    # print('Individual 3-gram: %.4f' % three_gram)
+    # print('Individual 4-gram: %.4f' % four_gram)
+    # break
 
 
 

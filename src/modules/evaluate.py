@@ -64,14 +64,13 @@ def plot_attention_weights(attention, sentence, result, layer):
   plt.show()
 """
 
-def generate_sentence(mr, ref, input_pipeline, transformer, plot=''):
+def generate_sentence(mr, input_pipeline, transformer, plot=''):
   result, attention_weights = evaluate(mr, input_pipeline.mr_tokenizer, input_pipeline.ref_tokenizer, transformer)
   
   predicted_sentence = input_pipeline.ref_tokenizer.decode([i for i in result if i < input_pipeline.ref_tokenizer.vocab_size])  
 
-  print('Meaning Representation: {}'.format(mr))
-  print('Predicted translation: {}'.format(predicted_sentence))
-  print('Reference: {}'.format(ref))
+  # print('Meaning Representation: {}'.format(mr))
+  # print('Predicted translation: {}'.format(predicted_sentence))
   return predicted_sentence
   
   #if plot:

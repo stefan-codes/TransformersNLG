@@ -28,7 +28,7 @@ def train_the_transformer(transformer, train_dataset):
   learning_rate = CustomSchedule(config.d_model)
   optimizer = tf.keras.optimizers.Adam(learning_rate, beta_1=0.9, beta_2=0.98, epsilon=1e-9)
 
-  # TODO: setting the train loss and accuracy?
+  # setting the train loss and accuracy?
   train_loss = tf.keras.metrics.Mean(name='train_loss')
   train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='train_accuracy')
 
@@ -38,7 +38,6 @@ def train_the_transformer(transformer, train_dataset):
   # batch sizes (the last batch is smaller), use input_signature to specify
   # more generic shapes.
 
-  #TODO: Update this part
   train_step_signature = [    
     tf.TensorSpec(shape=(None, None), dtype=tf.int64),
     tf.TensorSpec(shape=(None, None), dtype=tf.int64),
@@ -67,7 +66,7 @@ def train_the_transformer(transformer, train_dataset):
 
   # if a checkpoint exists, restore the latest checkpoint.
   if ckpt_manager.latest_checkpoint:
-    ckpt.restore(ckpt_manager.latest_checkpoint)
+    ckpt.restore(ckpt_manager.latest_checkpoint).expect_partial()
     print ('Latest checkpoint restored!!')  
     
   for epoch in range(config.EPOCHS):
