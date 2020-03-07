@@ -9,7 +9,7 @@ from modules.positional_encoding import positional_encoding
 # Encoder Layer #
 #################
 class EncoderLayer(tf.keras.layers.Layer):
-  def __init__(self, d_model, num_heads, dff, rate=0.1):
+  def __init__(self, d_model, num_heads, dff, rate=config.dropout_rate):
     super(EncoderLayer, self).__init__()
 
     self.mha = MultiHeadAttention(d_model, num_heads)
@@ -38,7 +38,7 @@ class EncoderLayer(tf.keras.layers.Layer):
 ###########
 class Encoder(tf.keras.layers.Layer):
   def __init__(self, num_layers, d_model, num_heads, dff, input_vocab_size,
-               maximum_position_encoding, rate=0.1):
+               maximum_position_encoding, rate=config.dropout_rate):
     super(Encoder, self).__init__()
 
     self.d_model = d_model

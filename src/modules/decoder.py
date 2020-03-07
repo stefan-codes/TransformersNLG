@@ -7,7 +7,7 @@ from modules.positional_encoding import positional_encoding
 # Decoder Layer #
 #################
 class DecoderLayer(tf.keras.layers.Layer):
-  def __init__(self, d_model, num_heads, dff, rate=0.1):
+  def __init__(self, d_model, num_heads, dff, rate=config.dropout_rate):
     super(DecoderLayer, self).__init__()
 
     self.mha1 = MultiHeadAttention(d_model, num_heads)
@@ -44,7 +44,7 @@ class DecoderLayer(tf.keras.layers.Layer):
 # Decoder #
 ###########
 class Decoder(tf.keras.layers.Layer):
-  def __init__(self, num_layers, d_model, num_heads, dff, target_vocab_size, maximum_position_encoding, rate=0.1):
+  def __init__(self, num_layers, d_model, num_heads, dff, target_vocab_size, maximum_position_encoding, rate=config.dropout_rate):
     super(Decoder, self).__init__()
 
     self.d_model = d_model
