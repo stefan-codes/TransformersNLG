@@ -24,7 +24,8 @@ def scaled_dot_product_attention(q, k, v, mask):
   scaled_attention_logits = matmul_qk / tf.math.sqrt(dk)
   # add the mask to the scaled tensor.
   if mask is not None:
-    scaled_attention_logits += (mask * -1e9)  
+    scaled_attention_logits += (mask * -1e9)
+
   # softmax is normalized on the last axis (seq_len_k) so that the scores add up to 1.
   attention_weights = tf.nn.softmax(scaled_attention_logits, axis=-1)  # (..., seq_len_q, seq_len_k)
   output = tf.matmul(attention_weights, v)  # (..., seq_len_q, depth_v)
@@ -37,8 +38,9 @@ def print_out(q, k, v):
   print (temp_attn)
   print ('Output is:')
   print (temp_out)
-  np.set_printoptions(suppress=True)
 
+# np.set_printoptions(suppress=True)
+#
 # temp_k = tf.constant([[10,0,0],
 #                       [0,10,0],
 #                       [0,0,10],

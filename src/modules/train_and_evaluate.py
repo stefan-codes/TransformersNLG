@@ -5,7 +5,7 @@ import config
 import csv
 import nltk
 import os
-# nltk.download('punkt')
+nltk.download('punkt')
 from modules.masking import create_padding_mask
 from modules.masking import create_look_ahead_mask
 from modules.optimizer import CustomSchedule
@@ -115,7 +115,7 @@ def evaluate_transformer(transformer, input_pipeline, name_of_file, num_of_examp
 
       counter = counter + 1
       if counter == num_of_examples:
-        break;
+        break
       if counter % 10 == 0 :
         print(counter)
 

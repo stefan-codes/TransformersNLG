@@ -14,7 +14,7 @@ from modules.train_and_evaluate import train_the_transformer
 
 # Initialize the input pipeline
 input_pipeline = create_input_pipeline()
-# input_pipeline.test_tokenizer(input_pipeline.ref_tokenizer, "This is so awesome!")
+#input_pipeline.test_tokenizer(input_pipeline.ref_tokenizer, "This is so awesome!")
 # input_pipeline.print_dataset_example(input_pipeline.test_dataset)
 
 # Create the transformer

@@ -10,16 +10,18 @@ class MultiHeadAttention(tf.keras.layers.Layer):
     assert d_model % self.num_heads == 0
     
     self.depth = d_model // self.num_heads
+
     self.wq = tf.keras.layers.Dense(d_model)
     self.wk = tf.keras.layers.Dense(d_model)
     self.wv = tf.keras.layers.Dense(d_model)
+
     self.dense = tf.keras.layers.Dense(d_model)
         
   def split_heads(self, x, batch_size):
     # Split the last dimension into (num_heads, depth).
     # Transpose the result such that the shape is (batch_size, num_heads, seq_len, depth)
     
-    x = tf.reshape(x, (batch_size, -1, self.num_heads, self.depth))
+    x = tf.reshape(x, (batch_size, -1, self.num_heads, self.depth)) # TODO: QUESTION - Why is the -1
     return tf.transpose(x, perm=[0, 2, 1, 3])
     
   def call(self, v, k, q, mask):
@@ -38,6 +40,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
     scaled_attention, attention_weights = scaled_dot_product_attention(q, k, v, mask)
     scaled_attention = tf.transpose(scaled_attention, perm=[0, 2, 1, 3])  # (batch_size, seq_len_q, num_heads, depth)
     concat_attention = tf.reshape(scaled_attention, (batch_size, -1, self.d_model))  # (batch_size, seq_len_q, d_model)
+    # Put through a final dense layer
     output = self.dense(concat_attention) # (batch_size, seq_len_q, d_model)
         
     return output, attention_weights
