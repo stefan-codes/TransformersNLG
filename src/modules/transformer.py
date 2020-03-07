@@ -18,7 +18,7 @@ class Transformer(tf.keras.Model):
     dec_output, attention_weights = self.decoder(tar, enc_output, training, look_ahead_mask, dec_padding_mask)
     final_output = self.final_layer(dec_output)  # (batch_size, tar_seq_len, target_vocab_size)
     return final_output, attention_weights
-
+    
 # interface
 def create_transformer(input_pipeline):
   # Get the vocab size of the 

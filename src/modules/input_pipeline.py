@@ -27,6 +27,11 @@ class Input_Pipeline:
         in_batch, out_batch = next(iter(dataset))
         print(in_batch, out_batch)
 
+    # Shuffle the train_dataset
+    def shuffle_train_dataset(self):
+        self.train_dataset = self.train_dataset.shuffle(config.SHUFFLE_BUFFER_SIZE)
+        print("Training dataset has been shuffled.")
+
 # Create a CsvDatasetV2 with defaults of [tf.string]*2
 def load_examples_into_dataset(filePath):
     # Defaults describing the data for making a tensorflow-dataset
@@ -64,14 +69,13 @@ def encode_examples(train_examples, test_examples, mr_tokenizer, ref_tokenizer):
         return result_mr, result_ref
 
     # Filter the data by length
-    def filter_max_length(x, y, max_length=config.EXAMPLES_MAX_LENGTH):
+    def filter_by_length(x, y, max_length=config.EXAMPLES_MAX_LENGTH):
         return tf.logical_and(tf.size(x) <= max_length, tf.size(y) <= max_length)
-
 
     train_dataset = train_examples.map(tf_encode)
     #padded_shape = ([None],[None])
     if config.FILTER_BY_LENGTH :
-        train_dataset = train_dataset.filter(filter_max_length)
+        train_dataset = train_dataset.filter(filter_by_length)
         #padded_shape = (config.BATCH_SIZE, config.EXAMPLES_MAX_LENGTH)
 
     # cache the dataset to memory to get a speedup while reading from it.
@@ -81,7 +85,7 @@ def encode_examples(train_examples, test_examples, mr_tokenizer, ref_tokenizer):
 
     test_dataset = test_examples.map(tf_encode)
     if config.FILTER_BY_LENGTH :
-        test_dataset = test_dataset.filter(filter_max_length)
+        test_dataset = test_dataset.filter(filter_by_length)
         
     test_dataset = test_dataset.padded_batch(config.BATCH_SIZE, padded_shapes=([None], [None]))
 
