@@ -23,6 +23,7 @@ transformer = create_transformer(input_pipeline)
 # Train the transformer
 train_the_transformer(transformer, input_pipeline)
 print(transformer.summary())
+#print('Training steps: {}'.format(config.train_steps))
 
 # Evaluate the test data
 evaluate_test_data(transformer, input_pipeline, 'results', 20)

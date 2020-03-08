@@ -25,6 +25,9 @@ dff = 256              # 512 vs 2048
 dropout_rate = 0.1      # 0.1
 warmup_steps = 4000     # 4000
 
+#####
+train_steps = 0
+
 # Save the config to a text file
 def save_config():
     config_file = open('./checkpoints/config.txt', 'w+')
@@ -42,3 +45,7 @@ def save_config():
     config_file.write('dropout_rate = {}\n'.format(dropout_rate))
 
     config_file.close()
+
+def update_train_steps():
+    global train_steps
+    train_steps = train_steps + 1

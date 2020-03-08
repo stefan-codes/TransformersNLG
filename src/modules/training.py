@@ -30,6 +30,7 @@ def train_the_transformer(transformer, input_pipeline):
 
   @tf.function(input_signature=train_step_signature)
   def train_step(inp, tar):
+    config.update_train_steps()
     with tf.GradientTape() as tape:
       train_loss = get_train_loss(inp, tar, transformer)
       # Originally the next to lines were outsite the with indentation

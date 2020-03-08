@@ -16,20 +16,20 @@ def loss_function(real, pred):
   
   return tf.reduce_mean(loss_)
 
-# TODO: Update
 # Get the 4-gram bleu score as percent (0.25, 0.25, 0.25, 0.25)
+# I did research more about it, it is correct. However if we get any n-gram 0 it returns 0
 def get_bleu_score(prediction, reference):
   tokenized_prediction = nltk.word_tokenize(prediction)
   tokenized_reference = nltk.word_tokenize(reference)
   list_references = []
   list_references.append(tokenized_reference)
 
-  bleu_score = sentence_bleu(list_references, prediction, weights=(0.25,0.25,0.25,0.25))
+  bleu_score = sentence_bleu(list_references, prediction, weights=(0.25,0.25,0.25,0.25), smoothing_function=None, auto_reweigh=False)
 
   # one_gram = sentence_bleu(list_references, prediction, weights=(1,0,0,0))
-  # two_gram = sentence_bleu(list_references, prediction, weights=(0,1,0,0))
-  # three_gram = sentence_bleu(list_references, prediction, weights=(0,0,1,0))
-  # four_gram = sentence_bleu(list_references, prediction, weights=(0,0,0,1))
+  # two_gram = sentence_bleu(list_references, prediction, weights=(0.5,0.5,0,0))
+  # three_gram = sentence_bleu(list_references, prediction, weights=(0.33,0.33,0.33,0))
+  # four_gram = sentence_bleu(list_references, prediction, weights=(0.25,0.25,0.25,0.25))
 
   return bleu_score * 100
 
