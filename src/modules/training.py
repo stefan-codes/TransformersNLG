@@ -49,7 +49,7 @@ def train_the_transformer(transformer, input_pipeline):
     print ('Latest checkpoint restored!!')  
 
   should_early_stop = False
-  best_val_loss = 999
+  best_val_loss = 999.9
   epoch_since_last_update = 0
 
   for epoch in range(config.EPOCHS):
@@ -81,8 +81,8 @@ def train_the_transformer(transformer, input_pipeline):
     print ('Time taken for 1 epoch: {} secs\n'.format(time.time() - start))
 
     # Early stopping here! if we didnt improve the best in 5 epoch, stop
-    if best_val_loss - mean_val_loss > 0.001 : 
-      best_val_loss = mean_val_loss
+    if best_val_loss - mean_val_loss.result() > 0.001 : 
+      best_val_loss = mean_val_loss.result()
       epoch_since_last_update = 0
     else:
       epoch_since_last_update = epoch_since_last_update + 1

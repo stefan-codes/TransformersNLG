@@ -24,14 +24,14 @@ def get_bleu_score(prediction, reference):
   list_references = []
   list_references.append(tokenized_reference)
 
-  bleu_score = sentence_bleu(list_references, prediction, weights=(0.25,0.25,0.25,0.25), smoothing_function=None, auto_reweigh=False)
+  # bleu_score = sentence_bleu(list_references, prediction, weights=(0.25,0.25,0.25,0.25), smoothing_function=None, auto_reweigh=False)
 
-  # one_gram = sentence_bleu(list_references, prediction, weights=(1,0,0,0))
-  # two_gram = sentence_bleu(list_references, prediction, weights=(0.5,0.5,0,0))
-  # three_gram = sentence_bleu(list_references, prediction, weights=(0.33,0.33,0.33,0))
-  # four_gram = sentence_bleu(list_references, prediction, weights=(0.25,0.25,0.25,0.25))
+  one_gram = sentence_bleu(list_references, prediction, weights=(1,0,0,0)) * 100
+  two_gram = sentence_bleu(list_references, prediction, weights=(0.5,0.5,0,0)) * 100
+  three_gram = sentence_bleu(list_references, prediction, weights=(0.33,0.33,0.33,0)) * 100
+  four_gram = sentence_bleu(list_references, prediction, weights=(0.25,0.25,0.25,0.25)) * 100
 
-  return bleu_score * 100
+  return one_gram, two_gram, three_gram, four_gram
 
 # Get the mean validation loss for the epoch - returns float
 def get_mean_val_loss(val_dataset, transformer):

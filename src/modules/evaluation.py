@@ -87,8 +87,8 @@ def evaluate_test_data(transformer, input_pipeline, name_of_file, num_of_example
   file_name = '{}/{}.csv'.format(config.results_path, name_of_file)
 
   with open(file_name, 'a+', newline='') as csv_file:
-    header_names = ['mr', 'ref', 'prediction', 'Bleu']
-    # header_names = ['mr', 'ref', 'prediction', '1-gram', '2-gram', '3-gram', '4-gram']
+    # header_names = ['mr', 'ref', 'prediction', 'Bleu']
+    header_names = ['mr', 'ref', 'prediction', '1-gram', '2-gram', '3-gram', '4-gram']
 
     the_writer = csv.DictWriter(csv_file, fieldnames=header_names)
     the_writer.writeheader()
@@ -104,10 +104,13 @@ def evaluate_test_data(transformer, input_pipeline, name_of_file, num_of_example
       predicted_sentence = generate_sentence(mr_example, input_pipeline, transformer)
 
       # Get the bleu scores
-      bleu_score = get_bleu_score(predicted_sentence, ref_example)
+      #bleu_score = get_bleu_score(predicted_sentence, ref_example)
+      one_gram, two_gram, three_gram, four_gram = get_bleu_score(predicted_sentence, ref_example)
 
       # write them to the file
-      the_writer.writerow({'mr' : mr_example, 'ref' : ref_example, 'prediction' : predicted_sentence, 'Bleu' : '%.2f' % bleu_score})
+      the_writer.writerow({'mr' : mr_example, 'ref' : ref_example, 'prediction' : predicted_sentence, 
+                          '1-gram' : '%.2f' % one_gram, '2-gram' : '%.2f' % two_gram,
+                          '3-gram' : '%.2f' % three_gram, '4-gram' : '%.2f' % four_gram})
       # the_writer.writerow({'mr' : mr_example, 'ref' : ref_example, 'prediction' : predicted_sentence, 
       #                       '1-gram' : '%.4f' % one_gram, '2-gram' : '%.4f' % two_gram, '3-gram' : '%.4f' % three_gram, '4-gram' : '%.4f' % four_gram})
 
