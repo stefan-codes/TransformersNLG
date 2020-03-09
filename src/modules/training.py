@@ -3,7 +3,7 @@ import tensorflow as tf
 import config
 
 from modules.optimizer import CustomSchedule
-from modules.loss_and_metrics import get_mean_test_loss
+from modules.loss_and_metrics import get_mean_val_loss
 from modules.loss_and_metrics import get_train_loss
 
 # Interface to train the transformer
@@ -48,6 +48,10 @@ def train_the_transformer(transformer, input_pipeline):
     ckpt.restore(ckpt_manager.latest_checkpoint).expect_partial()
     print ('Latest checkpoint restored!!')  
 
+  should_early_stop = False
+  best_val_loss = 999
+  epoch_since_last_update = 0
+
   for epoch in range(config.EPOCHS):
     start = time.time()
     mean_train_loss.reset_states()
@@ -67,12 +71,26 @@ def train_the_transformer(transformer, input_pipeline):
       print ('Saving checkpoint for epoch {} at {}'.format(epoch+1, ckpt_save_path))
 
     # During training if I want to do something, do it here...
-    mean_validation_loss = get_mean_test_loss(input_pipeline.test_dataset, transformer)
+    mean_val_loss = get_mean_val_loss(input_pipeline.test_dataset, transformer)
     input_pipeline.shuffle_train_dataset()
 
     # Write the epoch results to a log file
-    config.log('Epoch {} Train Loss {:.4f} Validation Loss {:.4f} Train Steps {}\n'.format(epoch + 1, mean_train_loss.result() , mean_validation_loss.result(), config.train_steps))
+    config.log('Epoch {} Train Loss {:.4f} Validation Loss {:.4f} Train Steps {} Time Taken {:.4f} secs\n'.format(epoch + 1, mean_train_loss.result() , mean_val_loss.result(), config.train_steps, time.time() - start))
 
-    print ('Epoch {} Train Loss {:.4f} Validation Loss {:.4f}'.format(epoch + 1, mean_train_loss.result() , mean_validation_loss.result()))
+    print ('Epoch {} Train Loss {:.4f} Validation Loss {:.4f}'.format(epoch + 1, mean_train_loss.result() , mean_val_loss.result()))
     print ('Time taken for 1 epoch: {} secs\n'.format(time.time() - start))
+
+    # Early stopping here! if we didnt improve the best in 5 epoch, stop
+    if best_val_loss - mean_val_loss > 0.001 : 
+      best_val_loss = mean_val_loss
+      epoch_since_last_update = 0
+    else:
+      epoch_since_last_update = epoch_since_last_update + 1
+
+    if epoch_since_last_update > 4 :
+      print('5 epoch with no update of val loss. Stoping early.')
+      break
+
+
+    
 

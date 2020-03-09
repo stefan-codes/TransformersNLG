@@ -4,9 +4,10 @@ import config
 
 # Class for the pipeline
 class Input_Pipeline:
-    def __init__(self, train_file, test_file):
+    def __init__(self, train_file, validation_file, test_file):
         self.train_examples = load_examples_into_dataset(train_file)
         self.test_examples = load_examples_into_dataset(test_file)
+        self.validation_examples = load_examples_into_dataset(validation_file)
         self.mr_tokenizer, self.ref_tokenizer = create_tokenizers(self.train_examples)
         self.train_dataset, self.test_dataset = encode_examples(self.train_examples, self.test_examples,
                                                                 self.mr_tokenizer, self.ref_tokenizer)
@@ -93,5 +94,5 @@ def encode_examples(train_examples, test_examples, mr_tokenizer, ref_tokenizer):
 
 # interface
 def create_input_pipeline():
-    ipl = Input_Pipeline(config.csv_train_examples, config.csv_test_examples)
+    ipl = Input_Pipeline(config.csv_train_examples, config.csv_val_examples, config.csv_test_examples)
     return ipl

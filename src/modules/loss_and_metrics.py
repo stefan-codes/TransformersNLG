@@ -33,20 +33,20 @@ def get_bleu_score(prediction, reference):
 
   return bleu_score * 100
 
-# Get the mean test loss for the epoch - returns float
-def get_mean_test_loss(test_dataset, transformer):
-  mean_test_loss = tf.keras.metrics.Mean(name='test_loss')
+# Get the mean validation loss for the epoch - returns float
+def get_mean_val_loss(val_dataset, transformer):
+  mean_val_loss = tf.keras.metrics.Mean(name='val_loss')
 
-  for(batch, (inp, tar)) in enumerate(test_dataset):
+  for(batch, (inp, tar)) in enumerate(val_dataset):
     tar_inp = tar[:, :-1]
     tar_real = tar[:, 1:]
 
     enc_padding_mask, combined_mask, dec_padding_mask = create_masks(inp, tar_inp)
     predictions, _ = transformer(inp, tar_inp, False, enc_padding_mask, combined_mask, dec_padding_mask)
-    test_loss = loss_function(tar_real, predictions)
-    mean_test_loss(test_loss)
+    val_loss = loss_function(tar_real, predictions)
+    mean_val_loss(val_loss)
 
-    return mean_test_loss
+    return mean_val_loss
 
 # Get the train loss for each inp - tar pair
 def get_train_loss(inp, tar, transformer):

@@ -13,11 +13,11 @@ results_path = "./results"
 
 ########## Variables ##########
 VOCAB_SIZE = 2**13          # Max size of the dictionary (from 1 to the number for encoding)
-FILTER_BY_LENGTH = True
-EXAMPLES_MAX_LENGTH = 30    # To keep this example small and relatively fast, drop examples with a length of over 40 tokens.
+FILTER_BY_LENGTH = False
+EXAMPLES_MAX_LENGTH = 300    # To keep this example small and relatively fast, drop examples with a length of over 40 tokens.
 BATCH_SIZE = 64
 SHUFFLE_BUFFER_SIZE = 43_000     # For perfect shuffling, a buffer size greater than or equal to the full size of the dataset is required.
-EPOCHS = 1
+EPOCHS = 10
 
 ########## Hyperparameters ########### vs 48,605,765 params
 num_layers = 2          # 4 vs 6
