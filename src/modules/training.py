@@ -30,7 +30,6 @@ def train_the_transformer(transformer, input_pipeline):
 
   @tf.function(input_signature=train_step_signature)
   def train_step(inp, tar):
-    config.update_train_steps()
     with tf.GradientTape() as tape:
       train_loss = get_train_loss(inp, tar, transformer)
       # Originally the next to lines were outsite the with indentation
@@ -42,7 +41,7 @@ def train_the_transformer(transformer, input_pipeline):
 
   # Create the checkpoint manager. This will be used to save checkpoints every n epochs.
   ckpt = tf.train.Checkpoint(transformer=transformer, optimizer=optimizer)
-  ckpt_manager = tf.train.CheckpointManager(ckpt, config.checkpoint_path, max_to_keep=5)
+  ckpt_manager = tf.train.CheckpointManager(ckpt, config.checkpoint_path, max_to_keep=10)
 
   # if a checkpoint exists, restore the latest checkpoint.
   if ckpt_manager.latest_checkpoint:
@@ -57,19 +56,23 @@ def train_the_transformer(transformer, input_pipeline):
     # inp -> mr, tar -> ref
     for (batch, (inp, tar)) in enumerate(input_pipeline.train_dataset):
       train_step(inp, tar)
-  
+      config.update_train_steps()
+
       if batch % 50 == 0:
           print ('Epoch {} Batch {} Loss {:.4f}'.format(epoch + 1, batch, mean_train_loss.result()))
     
-    if (epoch + 1) % 5 == 0:
+    if (epoch + 1) % 1 == 0:
       ckpt_save_path = ckpt_manager.save()
       config.save_config()
       print ('Saving checkpoint for epoch {} at {}'.format(epoch+1, ckpt_save_path))
 
     # During training if I want to do something, do it here...
-    mean_test_loss = get_mean_test_loss(input_pipeline.test_dataset, transformer)
+    mean_validation_loss = get_mean_test_loss(input_pipeline.test_dataset, transformer)
     input_pipeline.shuffle_train_dataset()
 
-    print ('Epoch {} Train Loss {:.4f} Test Loss {:.4f}'.format(epoch + 1, mean_train_loss.result() , mean_test_loss.result()))
+    # Write the epoch results to a log file
+    config.log('Epoch {} Train Loss {:.4f} Validation Loss {:.4f} Train Steps {}\n'.format(epoch + 1, mean_train_loss.result() , mean_validation_loss.result(), config.train_steps))
+
+    print ('Epoch {} Train Loss {:.4f} Validation Loss {:.4f}'.format(epoch + 1, mean_train_loss.result() , mean_validation_loss.result()))
     print ('Time taken for 1 epoch: {} secs\n'.format(time.time() - start))
 

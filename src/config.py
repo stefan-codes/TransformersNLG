@@ -4,9 +4,11 @@ import os
 dirname = os.path.realpath('')
 csv_train_examples = dirname + "\\data\\e2e-dataset\\trainset.csv"          #42,062 entries with label
 csv_test_examples = dirname + "\\data\\e2e-dataset\\testset_w_refs.csv"
+csv_val_examples = dirname + "\\data\\e2e-dataset\\devset.csv"
 
 # Set the check point save location
 checkpoint_path = "./checkpoints/train"
+log_path = "./checkpoints"
 results_path = "./results"
 
 ########## Variables ##########
@@ -43,9 +45,16 @@ def save_config():
     config_file.write('num_heads = {}\n'.format(num_heads))
     config_file.write('dff = {}\n'.format(dff))
     config_file.write('dropout_rate = {}\n'.format(dropout_rate))
+    config_file.write('warmup_steps = {}\n'.format(warmup_steps))
 
     config_file.close()
 
 def update_train_steps():
     global train_steps
     train_steps = train_steps + 1
+
+# Log the string to the file
+def log(string):
+    log_file = open('{}/log.txt'.format(log_path), 'a+')
+    log_file.write(string)
+    log_file.close()
